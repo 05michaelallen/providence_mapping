@@ -9,9 +9,10 @@ Created on Mon Mar 22 10:13:42 2021
 import os
 import numpy as np
 import rasterio as rio 
+from affine import Affine
 
 os.chdir("/home/vegveg/providence_mapping/code")
-target_px_size = 20
+target_px_size = 10
 source_px_size = 2
 n_classes = 8
 
@@ -35,8 +36,14 @@ fracs = np.full([n_classes,
 
 # grab and modify metadata
 meta = lc.meta.copy()
+# modify transform
+trans = meta['transform']
+trans_update = Affine(target_px_size, trans[1], trans[2], trans[3], -target_px_size, trans[5])
 meta.update({'dtype': 'float32',
              'count': n_classes,
+             'height': fracs.shape[1],
+             'width': fracs.shape[2],
+             'transform': trans_update,
              'nodata': -999})
 
 # =============================================================================
