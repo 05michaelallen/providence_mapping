@@ -49,6 +49,7 @@ meta.update({'dtype': 'float32',
 # =============================================================================
 # aggregation
 # =============================================================================
+# create "total" i.e. sum of all pixels for denomenator
 total = lcr.copy()
 total[total > 0] = 1
 total[total < 1] = 0
@@ -65,6 +66,7 @@ for c in range(n_classes):
             tj = int(bj + (target_px_size/source_px_size))
             fracs[c-1, i, j] = np.nansum(lcr[bi:ti,bj:tj] == c) / np.nansum(total[bi:ti,bj:tj])
 
+# output result
 print("output")
 with rio.open("../data/lariac_" + str(target_px_size) + "m_fractions.tif", 'w', **meta) as dst:
     dst.write(fracs)
