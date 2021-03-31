@@ -12,7 +12,7 @@ import rasterio as rio
 from affine import Affine
 
 os.chdir("/home/vegveg/providence_mapping/code")
-target_px_size = 10
+target_px_size = 20
 source_px_size = 2
 n_classes = 8
 
@@ -20,7 +20,7 @@ n_classes = 8
 # import and pre-process data
 # =============================================================================
 # import lc data
-lc = rio.open("../data/la_cover_urban_sub_utm_majority2m_clip_mask.tif")
+lc = rio.open("../data/la_cover_urban_sub_utm_majority2m_wgs84.tif")
 lcr = lc.read()[0]
 
 # reclassify zeros as nan
@@ -68,5 +68,5 @@ for c in range(n_classes):
 
 # output result
 print("output")
-with rio.open("../data/lariac_" + str(target_px_size) + "m_fractions.tif", 'w', **meta) as dst:
+with rio.open("../data/lariac_" + str(target_px_size) + "m_fractions_noclip.tif", 'w', **meta) as dst:
     dst.write(fracs)
