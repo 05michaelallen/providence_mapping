@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar 31 10:16:57 2021
+Created on Thu Apr  1 10:32:57 2021
 
 @author: vegveg
 """
@@ -9,7 +9,6 @@ Created on Wed Mar 31 10:16:57 2021
 import os
 import numpy as np
 import pandas as pd
-import rasterstats as rs
 import geopandas as gpd
 import rasterio as rio 
 import cartopy 
@@ -21,41 +20,6 @@ os.chdir("/home/vegveg/providence_mapping/code")
 # =============================================================================
 # functions
 # =============================================================================
-def zonalmetric(shp, rast, classids, stats):
-    """
-    
-
-    Parameters
-    ----------
-    shp : TYPE
-        DESCRIPTION.
-    rast : TYPE
-        DESCRIPTION.
-    classids : TYPE
-        DESCRIPTION.
-    stats : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    rs_agg : TYPE
-        DESCRIPTION.
-
-    """
-    r = rio.open(rast)
-    s = gpd.read_file(shp)
-    rs_agg = []
-    for stat in stats:
-        for classid in classids:
-            rs_stat = rs.zonal_stats(s, r.read()[classid,:,:],
-                                     affine = r.transform,
-                                     stats = stat)
-            rs_stat = [np.asarray([x[attribute] for x in rs_stat]) for attribute in [stat]][0]
-            rs_stat[rs_stat == np.array(None)] = np.nan
-            rs_agg.append(rs_stat.astype(float))
-        return rs_agg
-    
-
 def scale_bar(ax, zone, length, location = (0.85, 0.05), linewidth = 2, fontsize = 12):
     """
     ax is the axes to draw the scalebar on.
@@ -91,38 +55,26 @@ def scale_bar(ax, zone, length, location = (0.85, 0.05), linewidth = 2, fontsize
     #Plot the scalebar label
     ax.text(sbx, sby, str(length) + ' km', transform = tmc, color = '0', fontsize = fontsize,
             horizontalalignment = 'center', verticalalignment = 'bottom')
+
 # =============================================================================
-# run zonal stats
+# import and process
 # =============================================================================
 shp = "../data/Los Angeles Neighborhood Map/geo_export_3b62483e-90a4-4acf-9359-a830f3086143_utm_wgs84.shp"
-#shp = "../data/acs_2016_5yr_bg_06_california_polygons_joined_clip.geojson"
-rast = "../data/lariac_10m_fractions_noclip.tif"
+rast = "../data/lariac_20m_fractions_noclip.tif"
 rast_link = rio.open(rast)
-classids = [1, 2]
-stats = ['mean']
-
-# run zonal stats
-rs_agg = zonalmetric(shp, rast, classids, stats)
-rs_agg = np.array(rs_agg).T * 100
-
-# merge output w/ shapefile
-s = gpd.read_file(shp)
-sr = pd.concat([s,
-                pd.DataFrame(rs_agg, columns = ['tree', 'grass'])],
-               axis = 1)
-
-# create total veg column
-sr['veg'] = sr['tree'] + sr['grass']
+rast_read = rast_link.read()
 
 # =============================================================================
-# plot
+# plots
 # =============================================================================
 labels = False
 roffset = 25000
 coffset = 20000
 projection = ccrs.UTM(11)
-bbox = [rast_link.bounds[0] + roffset - 16000, rast_link.bounds[2] - roffset - 16000,
-        rast_link.bounds[1] + coffset, rast_link.bounds[3] - coffset]
+bbox = [rast_link.bounds[0], rast_link.bounds[2],
+        rast_link.bounds[1], rast_link.bounds[3]]
+bbox_zoom = [rast_link.bounds[0] + roffset - 16000, rast_link.bounds[2] - roffset - 16000,
+             rast_link.bounds[1] + coffset, rast_link.bounds[3] - coffset]
 
 fig, ax0 = plt.subplots(1, 1, figsize = [6.5, 6.5],
                         #constrained_layout = True,
@@ -132,34 +84,26 @@ ax0.set_extent(bbox, projection)
 
 ax0.add_feature(cartopy.feature.OCEAN, zorder = 0)
 ax0.add_feature(cartopy.feature.LAND, zorder = 0)
-#ax0.add_feature(cartopy.feature.COASTLINE, zorder = 10, linewidth = 4)
 
 # add plot
-s0 = sr.plot(column = 'tree', vmin = 0, vmax = 30, ax = ax0, cmap = plt.cm.Greens,
-             edgecolor = '0.2', linewidth = 0.6)
+p0 = ax0.imshow(rast_read[0] * 100, vmin = 0, vmax = 50, cmap = plt.cm.Greens,
+                extent = bbox, origin = 'upper', zorder = 0)
+ax0.set_xlim(bbox_zoom[0], bbox_zoom[1])
+ax0.set_ylim(bbox_zoom[2], bbox_zoom[3])
+ax0.tick_params(top = True, right = True, zorder = 00)
+ax0.grid(zorder = 0)
 
-patch_col = ax0.collections[0]
-cb = fig.colorbar(patch_col, ax = ax0, shrink = 0.6,
-                  ticks = [0, 10, 20, 30])
+# labels
+ax0.set_xticks(np.linspace(np.round(bbox_zoom[0], -4), np.round(bbox_zoom[1]-1000, -4), 4))
+ax0.set_yticks(np.linspace(np.round(bbox_zoom[2], -4), np.round(bbox_zoom[3], -4), 4))
+ax0.set_xlabel("Easting, m")
+ax0.set_ylabel("Northing, m")
+cb = fig.colorbar(p0, ax = ax0, shrink = 0.6,
+                  ticks = [0, 10, 20, 30, 40, 50])
 cb.ax.tick_params(labelsize = 12)
 cb.set_label(label = "Tree Cover, %", size = 12, rotation = 90)
 
 scale_bar(ax0, 11, 3, location = [0.05, 0.02])
 
-ax0.set_xticks(np.linspace(np.round(bbox[0], -4), np.round(bbox[1]-1000, -4), 4))
-ax0.set_yticks(np.linspace(np.round(bbox[2], -4), np.round(bbox[3], -4), 4))
-ax0.set_xlabel("Easting, m")
-ax0.set_ylabel("Northing, m")
-ax0.tick_params(top = True, right = True, zorder = 00)
-ax0.grid(zorder = 0)
-
-# add labels
-if labels:
-    for i in range(len(sr)):
-        x = sr.iloc[i,:]['geometry'].centroid.x
-        y = sr.iloc[i,:]['geometry'].centroid.y
-        if (x > bbox[0]) and (x < bbox[1]) and (y > bbox[2]) and (y < bbox[3]):
-            ax0.text(x, y, sr.iloc[i,:]['name'], va = 'center', ha = 'center', fontsize = 6)
-
-plt.tight_layout()
-plt.savefig("../plots/tree_shp_zoom.png", dpi = 800)
+#plt.tight_layout()
+plt.savefig("../plots/tree_rast_zoom.png", dpi = 800)

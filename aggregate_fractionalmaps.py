@@ -12,7 +12,7 @@ import rasterio as rio
 from affine import Affine
 
 os.chdir("/home/vegveg/providence_mapping/code")
-target_px_size = 20
+target_px_size = 10
 source_px_size = 2
 n_classes = 8
 
