@@ -15,6 +15,7 @@ import rasterio as rio
 import cartopy 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as PathEffects
 
 os.chdir("/home/vegveg/providence_mapping/code")
 
@@ -115,11 +116,15 @@ sr = pd.concat([s,
 # create total veg column
 sr['veg'] = sr['tree'] + sr['grass']
 
+# adjust income
+sr['MHI2016'] = sr['MHI2016'] / 1000
+
 # =============================================================================
 # plot
 # =============================================================================
+col = 'MHI2016'
 col = 'veg'
-labels = False
+labels = True
 roffset = 25000
 coffset = 20000
 projection = ccrs.UTM(11)
@@ -138,13 +143,13 @@ ax0.add_feature(cartopy.feature.LAND, zorder = 0)
 
 # add plot
 if col == 'veg':
-    s0 = sr.plot(column = col, vmin = 0, vmax = 50, ax = ax0, cmap = plt.cm.Greens,
+    s0 = sr.plot(column = col, vmin = 0, vmax = 40, ax = ax0, cmap = plt.cm.Greens,
                  edgecolor = '0.9', linewidth = 0.2)
     label = "Green Cover, %"
 else:
-    s0 = sr.plot(column = col, vmin = 0, vmax = 200000, ax = ax0,
-                 edgecolor = '0.9', linewidth = 0.2)
-    label = "Median Household Income (2016)"
+    s0 = sr.plot(column = col, vmin = 0, vmax = 150, ax = ax0, cmap = plt.cm.cividis,
+                 edgecolor = '0.9', linewidth = 0.2, missing_kwds = dict(color = 'lightgrey'))
+    label = "2016 Median Household Income (*1000)"
 
 patch_col = ax0.collections[0]
 cb = fig.colorbar(patch_col, ax = ax0, shrink = 0.6)
@@ -162,16 +167,15 @@ ax0.grid(zorder = 0)
 
 # add labels
 if labels:
-    for i in range(len(sr)):
-        sri = sr.iloc[i,:]
-        if float(sri['sqmi']) > 2:
-            x = sri['geometry'].centroid.x
-            y = sri['geometry'].centroid.y
-            if (x > bbox[0]) and (x < bbox[1]) and (y > bbox[2]) and (y < bbox[3]):
-                if sri['veg'] > 20:
-                    ax0.text(x, y, sri['name'], va = 'center', ha = 'center', fontsize = 8, color = '1')
-                else:
-                    ax0.text(x, y, sri['name'], va = 'center', ha = 'center', fontsize = 8, color = '0')
+    s_lab = gpd.read_file("../data/Los Angeles Neighborhood Map/geo_export_3b62483e-90a4-4acf-9359-a830f3086143_utm_wgs84.shp")
+    for i in range(len(s_lab)):
+            sri = s_lab.iloc[i,:]
+            if float(sri['sqmi']) > 3:
+                x = sri['geometry'].centroid.x
+                y = sri['geometry'].centroid.y
+                if (x > bbox[0]) and (x < bbox[1]) and (y > bbox[2]) and (y < bbox[3]) and (sri['name'] != "Boyle Heights") and (sri['name'] != "Alhambra") and (sri['name'] != "Encino") and (sri['name'] != "Hollywood Hills West") and (sri['name'] != "Sherman Oaks") and (sri['name'] != "South Pasadena"):
+                    ax0.text(x, y, sri['name'], va = 'center', ha = 'center', fontsize = 10, color = '0',
+                             path_effects = [PathEffects.withStroke(linewidth = 2, foreground = "w", alpha = 1)])
 
 plt.tight_layout()
 plt.savefig("../plots/" + col + "_tract_zoom.png", dpi = 800)

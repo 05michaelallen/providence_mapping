@@ -67,6 +67,7 @@ rast_read = rast_link.read()
 # =============================================================================
 # plots
 # =============================================================================
+r = rast_read[0] + rast_read[1]
 labels = False
 roffset = 25000
 coffset = 20000
@@ -86,7 +87,7 @@ ax0.add_feature(cartopy.feature.OCEAN, zorder = 0)
 ax0.add_feature(cartopy.feature.LAND, zorder = 0)
 
 # add plot
-p0 = ax0.imshow(rast_read[0] * 100, vmin = 0, vmax = 50, cmap = plt.cm.Greens,
+p0 = ax0.imshow(r * 100, vmin = 0, vmax = 100, cmap = plt.cm.Greens,
                 extent = bbox, origin = 'upper', zorder = 0)
 ax0.set_xlim(bbox_zoom[0], bbox_zoom[1])
 ax0.set_ylim(bbox_zoom[2], bbox_zoom[3])
@@ -94,16 +95,15 @@ ax0.tick_params(top = True, right = True, zorder = 00)
 ax0.grid(zorder = 0)
 
 # labels
-ax0.set_xticks(np.linspace(np.round(bbox_zoom[0], -4), np.round(bbox_zoom[1]-1000, -4), 4))
+ax0.set_xticks(np.linspace(np.round(bbox_zoom[0]+5000, -4), np.round(bbox_zoom[1]-1000, -4), 4))
 ax0.set_yticks(np.linspace(np.round(bbox_zoom[2], -4), np.round(bbox_zoom[3], -4), 4))
 ax0.set_xlabel("Easting, m")
 ax0.set_ylabel("Northing, m")
-cb = fig.colorbar(p0, ax = ax0, shrink = 0.6,
-                  ticks = [0, 10, 20, 30, 40, 50])
+cb = fig.colorbar(p0, ax = ax0, shrink = 0.6)
 cb.ax.tick_params(labelsize = 12)
-cb.set_label(label = "Tree Cover, %", size = 12, rotation = 90)
+cb.set_label(label = "Veg Cover, %", size = 12, rotation = 90)
 
 scale_bar(ax0, 11, 3, location = [0.05, 0.02])
 
 #plt.tight_layout()
-plt.savefig("../plots/tree_rast_zoom.png", dpi = 800)
+plt.savefig("../plots/veg_rast_zoom.png", dpi = 800)
