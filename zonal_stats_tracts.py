@@ -16,6 +16,7 @@ import cartopy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
+import cmocean
 
 os.chdir("/home/vegveg/providence_mapping/code")
 
@@ -24,23 +25,23 @@ os.chdir("/home/vegveg/providence_mapping/code")
 # =============================================================================
 def zonalmetric(shp, rast, classids, stats):
     """
-    
+    Take zonal stats of raster based on polygons in a shapefile. Note: this is meant for classifications.
 
     Parameters
     ----------
-    shp : TYPE
-        DESCRIPTION.
-    rast : TYPE
-        DESCRIPTION.
-    classids : TYPE
-        DESCRIPTION.
-    stats : TYPE
-        DESCRIPTION.
+    shp : str
+        relative path to shapefile
+    rast : str
+        relative path to raster
+    classids : list of ints
+        class ids to query
+    stats : list of str
+        stats to perform, red into rasterstats
 
     Returns
     -------
-    rs_agg : TYPE
-        DESCRIPTION.
+    rs_agg : list
+        list of numpy arrays with size classids x stats
 
     """
     r = rio.open(rast)
@@ -144,11 +145,11 @@ ax0.add_feature(cartopy.feature.LAND, zorder = 0)
 # add plot
 if col == 'veg':
     s0 = sr.plot(column = col, vmin = 0, vmax = 40, ax = ax0, cmap = plt.cm.Greens,
-                 edgecolor = '0.9', linewidth = 0.2)
+                 edgecolor = '0.5', linewidth = 0.2)
     label = "Green Cover, %"
 else:
-    s0 = sr.plot(column = col, vmin = 0, vmax = 150, ax = ax0, cmap = plt.cm.cividis,
-                 edgecolor = '0.9', linewidth = 0.2, missing_kwds = dict(color = 'lightgrey'))
+    s0 = sr.plot(column = col, vmin = 0, vmax = 150, ax = ax0, cmap = cmocean.cm.deep_r, #plt.cm.cividis,
+                 edgecolor = '0.5', linewidth = 0.2, missing_kwds = dict(color = 'lightgrey'))
     label = "2016 Median Household Income (*1000)"
 
 patch_col = ax0.collections[0]
@@ -173,9 +174,9 @@ if labels:
             if float(sri['sqmi']) > 3:
                 x = sri['geometry'].centroid.x
                 y = sri['geometry'].centroid.y
-                if (x > bbox[0]) and (x < bbox[1]) and (y > bbox[2]) and (y < bbox[3]) and (sri['name'] != "Boyle Heights") and (sri['name'] != "Alhambra") and (sri['name'] != "Encino") and (sri['name'] != "Hollywood Hills West") and (sri['name'] != "Sherman Oaks") and (sri['name'] != "South Pasadena"):
+                if (x > bbox[0]) and (x < bbox[1]) and (y > bbox[2]) and (y < bbox[3]) and (sri['name'] != "Boyle Heights") and (sri['name'] != "Commerce") and (sri['name'] != "Alhambra") and (sri['name'] != "Encino") and (sri['name'] != "Hollywood Hills West") and (sri['name'] != "Sherman Oaks") and (sri['name'] != "South Pasadena"):
                     ax0.text(x, y, sri['name'], va = 'center', ha = 'center', fontsize = 10, color = '0',
-                             path_effects = [PathEffects.withStroke(linewidth = 2, foreground = "w", alpha = 1)])
+                             path_effects = [PathEffects.withStroke(linewidth = 1.5, foreground = "0.9", alpha = 1)])
 
 plt.tight_layout()
 plt.savefig("../plots/" + col + "_tract_zoom.png", dpi = 800)
